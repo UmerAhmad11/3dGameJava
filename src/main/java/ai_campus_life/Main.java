@@ -1,125 +1,68 @@
 package ai_campus_life;
 
-//Import Libraries
 import com.jme3.app.SimpleApplication;
-import com.jme3.material.Material;
-import com.jme3.math.ColorRGBA;
-import com.jme3.scene.Geometry;
-import com.jme3.scene.shape.Box;
-import com.jme3.scene.shape.RectangleMesh;
-import com.jme3.light.DirectionalLight;
-import com.jme3.math.Vector3f;
-import com.jme3.input.KeyInput;
-import com.jme3.input.controls.AnalogListener;
-import com.jme3.input.controls.KeyTrigger;
-import com.jme3.scene.Node;
+import com.jme3.niftygui.NiftyJmeDisplay;
+import de.lessvoid.nifty.Nifty;
+// Import the Game class
+import ai_campus_life.Game;
 
-//Main -> Simple Application which uses Analog Listener
-public class Main extends SimpleApplication implements AnalogListener{
-    private Geometry geom;
-    private Node cubeNode;
-    private Vector3f cameraOffset;
+public class Main extends SimpleApplication {
 
-    private static final String MOVE_CUBE_FORWARD = "MoveCubeForward";
-    private static final String MOVE_CUBE_BACKWARD = "MoveCubeBackward";
-    private static final String MOVE_CUBE_LEFT = "MoveCubeLeft";
-    private static final String MOVE_CUBE_RIGHT = "MoveCubeRight";
+    private Nifty nifty;
+    private NiftyJmeDisplay niftyDisplay;
+    private static boolean startGameRequested = false;
 
-    public static void main(String[] args) {
-        Main app = new Main();
-        app.start();
+    public static void main(String[] args){
+        Main menuApp = new Main();
+        menuApp.setPauseOnLostFocus(false); // Keep menu running even if focus is lost
+        menuApp.start(); // This call is blocking until menuApp.stop() is called
+
+        // After the menuApp stops, check if the game should be started
+        if (startGameRequested) {
+            Game gameApp = new Game();
+            // You might want to set properties for gameApp here, e.g.:
+            // gameApp.setPauseOnLostFocus(false);
+            gameApp.start();
+        }
     }
 
     @Override
     public void simpleInitApp() {
 
-        flyCam.setEnabled(false);
+        NiftyJmeDisplay niftyDisplay = NiftyJmeDisplay.newNiftyJmeDisplay(
+                assetManager,
+                inputManager,
+                audioRenderer,
+                guiViewPort);
+        this.niftyDisplay = niftyDisplay; // Store for later removal
+        nifty = niftyDisplay.getNifty();
+        StartScreenController startScreen = new StartScreenController(this);
+        nifty.fromXml("Interface/Nifty/HelloJme.xml", "start", startScreen);
 
-        Box b = new Box(1, 1, 1);
-        geom = new Geometry("Cube", b);
-        geom.setLocalTranslation(0, 0, 0);
+        // attach the nifty display to the gui view port as a processor
+        guiViewPort.addProcessor(niftyDisplay);
 
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", ColorRGBA.Blue);
-        geom.setMaterial(mat);
-
-        cubeNode = new Node("Cube Node");
-        cubeNode.attachChild(geom);
-        rootNode.attachChild(cubeNode);
-
-        mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setTexture("ColorMap", assetManager.loadTexture("Textures/dirt.png"));
-        Geometry ground = new Geometry("ground", new RectangleMesh(
-                new Vector3f(-25, -1, 25),
-                new Vector3f(25, -1, 25),
-                new Vector3f(-25, -1, -25)));
-        ground.setMaterial(mat);
-        rootNode.attachChild(ground);
-
-        DirectionalLight sun = new DirectionalLight();
-        sun.setDirection(new Vector3f(-0.5f, -0.5f, -0.5f).normalizeLocal());
-        sun.setColor(ColorRGBA.White);
-        rootNode.addLight(sun);
-
-        cameraOffset = new Vector3f(0, 4f, 8f);
-        Vector3f initialCubePosition = cubeNode.getWorldTranslation();
-        cam.setLocation(initialCubePosition.add(cameraOffset));
-        cam.lookAt(initialCubePosition, Vector3f.UNIT_Y);
-        initKeys();
+        // disable the fly cam
+//        flyCam.setEnabled(false);
+//        flyCam.setDragToRotate(true);
+        inputManager.setCursorVisible(true);
     }
 
-    private void initKeys() {
-        inputManager.addMapping(MOVE_CUBE_FORWARD, new KeyTrigger(KeyInput.KEY_UP));
-        inputManager.addMapping(MOVE_CUBE_BACKWARD, new KeyTrigger(KeyInput.KEY_DOWN));
-        inputManager.addMapping(MOVE_CUBE_LEFT, new KeyTrigger(KeyInput.KEY_LEFT));
-        inputManager.addMapping(MOVE_CUBE_RIGHT, new KeyTrigger(KeyInput.KEY_RIGHT));
+    /**
+     * This method should be called by the StartScreenController when the user
+     * clicks the "start game" button in the Nifty GUI.
+     */
+    public void transitionToGame() {
+        Main.startGameRequested = true;
 
-        inputManager.addListener(this, MOVE_CUBE_FORWARD, MOVE_CUBE_BACKWARD, MOVE_CUBE_LEFT, MOVE_CUBE_RIGHT);
+        // Perform cleanup of Nifty GUI
+        if (niftyDisplay != null) {
+            guiViewPort.removeProcessor(niftyDisplay);
+        }
+        if (nifty != null) {
+            nifty.exit(); // Gracefully exit Nifty
+        }
+        inputManager.setCursorVisible(false); // Hide cursor before game starts
+        this.stop(); // Stop the Main (menu) application
     }
-
-    @Override
-    public void onAnalog(String name, float value, float tpf) {
-        float moveSpeed = 20f;
-
-        Vector3f camForward = cam.getDirection().clone();
-        camForward.y = 0;
-        if (camForward.lengthSquared() > 0) {
-            camForward.normalizeLocal();
-        }
-
-        Vector3f camStrafeLeft = cam.getLeft().clone();
-        camStrafeLeft.y = 0;
-        if (camStrafeLeft.lengthSquared() > 0) {
-            camStrafeLeft.normalizeLocal();
-        }
-
-        camForward.multLocal(moveSpeed * tpf);
-        camStrafeLeft.multLocal(moveSpeed * tpf);
-
-        if (name.equals(MOVE_CUBE_FORWARD)) {
-            cubeNode.move(camForward);
-        }
-        if (name.equals(MOVE_CUBE_BACKWARD)) {
-            cubeNode.move(camForward.negate());
-        }
-        if (name.equals(MOVE_CUBE_RIGHT)) {
-            cubeNode.move(camStrafeLeft.negate());
-        }
-        if (name.equals(MOVE_CUBE_LEFT)) {
-            cubeNode.move(camStrafeLeft);
-        }
-    }
-    @Override
-    public void simpleUpdate(float tpf) {
-        super.simpleUpdate(tpf);
-        if (cubeNode != null && cam != null && cameraOffset != null) {
-            Vector3f cubePosition = cubeNode.getWorldTranslation();
-
-            Vector3f desiredCamLocation = cubePosition.add(cameraOffset);
-
-            cam.setLocation(desiredCamLocation);
-            cam.lookAt(cubePosition, Vector3f.UNIT_Y);
-        }
-    }
-
 }
