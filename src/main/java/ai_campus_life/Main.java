@@ -19,7 +19,7 @@ import com.jme3.scene.Node;
 
 public class Main extends SimpleApplication implements AnalogListener{
     private Geometry geom; // The cube, now a class field
-    final private Vector3f direction = new Vector3f();
+    // final private Vector3f direction = new Vector3f(); // This field was unused
     private Node cubeNode;
     private Vector3f cameraOffset;
 
@@ -76,8 +76,8 @@ public class Main extends SimpleApplication implements AnalogListener{
         // (x, y, z) -> (0 means centered horizontally, positive y is above, positive z is behind)
         cameraOffset = new Vector3f(0, 4f, 8f); // Adjust these values to your liking
         Vector3f initialCubePosition = cubeNode.getWorldTranslation();
-        cam.setLocation(initialCubePosition.add(cameraOffset));
-        cam.lookAt(initialCubePosition, Vector3f.UNIT_Y);
+        cam.setLocation(initialCubePosition.add(cameraOffset)); // Set initial camera position
+        cam.lookAt(initialCubePosition, Vector3f.UNIT_Y); // Look at the cube, Y is typically up
 
         // Initialize key inputs
         initKeys();
@@ -99,22 +99,38 @@ public class Main extends SimpleApplication implements AnalogListener{
 
     @Override
     public void onAnalog(String name, float value, float tpf) {
-        // Calculate movement direction based on camera's current facing direction
-        // This makes "forward" move away from the camera, "right" move to camera's right, etc.
-        Vector3f camDir = cam.getDirection().clone().multLocal(5 * tpf); // Movement speed factor 5
-        Vector3f camLeft = cam.getLeft().clone().multLocal(5 * tpf);
+        float moveSpeed = 20f; // Define movement speed
+
+        // Calculate forward/backward movement vector based on camera's direction, projected onto XZ plane
+        Vector3f camForward = cam.getDirection().clone();
+        camForward.y = 0; // Project onto the horizontal plane (ignore vertical component)
+        if (camForward.lengthSquared() > 0) { // Avoid normalizing a zero vector (if camera looks straight up/down)
+            camForward.normalizeLocal(); // Ensure consistent speed regardless of camera pitch
+        }
+
+        // Calculate left/right strafe movement vector based on camera's left vector, projected onto XZ plane
+        Vector3f camStrafeLeft = cam.getLeft().clone();
+        camStrafeLeft.y = 0; // Project onto the horizontal plane
+        if (camStrafeLeft.lengthSquared() > 0) { // Avoid normalizing a zero vector
+            camStrafeLeft.normalizeLocal(); // Ensure consistent speed
+        }
+
+        // Apply speed and time-per-frame scaling
+        camForward.multLocal(moveSpeed * tpf);
+        camStrafeLeft.multLocal(moveSpeed * tpf);
 
         if (name.equals(MOVE_CUBE_FORWARD)) {
-            cubeNode.move(camDir);
+            cubeNode.move(camForward);
         }
         if (name.equals(MOVE_CUBE_BACKWARD)) {
-            cubeNode.move(camDir.negate()); // Move in the opposite direction of camDir
+            cubeNode.move(camForward.negate()); // Move in the opposite direction
         }
         if (name.equals(MOVE_CUBE_RIGHT)) {
-            cubeNode.move(camLeft.negate()); // cam.getLeft() points left, so negate for rightward movement
+            // cam.getLeft() points to the camera's left, so negate for rightward movement relative to camera
+            cubeNode.move(camStrafeLeft.negate());
         }
         if (name.equals(MOVE_CUBE_LEFT)) {
-            cubeNode.move(camLeft);
+            cubeNode.move(camStrafeLeft);
         }
     }
 
