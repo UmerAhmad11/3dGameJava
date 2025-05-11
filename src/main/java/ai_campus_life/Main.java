@@ -1,68 +1,56 @@
 package ai_campus_life;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.niftygui.NiftyJmeDisplay;
-import de.lessvoid.nifty.Nifty;
-// Import the Game class
-import ai_campus_life.Game;
+import com.jme3.system.AppSettings;
+import com.simsilica.lemur.Button;
+import com.simsilica.lemur.Container;
+import com.simsilica.lemur.GuiGlobals;
+import com.simsilica.lemur.Label;
 
 public class Main extends SimpleApplication {
 
-    private Nifty nifty;
-    private NiftyJmeDisplay niftyDisplay;
-    private static boolean startGameRequested = false;
+    private MainMenuState mainMenuState;
+    private static AppSettings gameSettings;
 
-    public static void main(String[] args){
-        Main menuApp = new Main();
-        menuApp.setPauseOnLostFocus(false); // Keep menu running even if focus is lost
-        menuApp.start(); // This call is blocking until menuApp.stop() is called
+    public static void main(String[] args) {
+        
+        Main app = new Main();
 
-        // After the menuApp stops, check if the game should be started
-        if (startGameRequested) {
-            Game gameApp = new Game();
-            // You might want to set properties for gameApp here, e.g.:
-            // gameApp.setPauseOnLostFocus(false);
-            gameApp.start();
-        }
+        // Configure the game settings
+        gameSettings = new AppSettings(true);
+        gameSettings.setTitle("Main Menu");
+        gameSettings.setResolution(1280, 720);
+        app.setSettings(gameSettings);
+        
+        // Start the main menu
+        app.start();
     }
 
     @Override
     public void simpleInitApp() {
 
-        NiftyJmeDisplay niftyDisplay = NiftyJmeDisplay.newNiftyJmeDisplay(
-                assetManager,
-                inputManager,
-                audioRenderer,
-                guiViewPort);
-        this.niftyDisplay = niftyDisplay; // Store for later removal
-        nifty = niftyDisplay.getNifty();
-        StartScreenController startScreen = new StartScreenController(this);
-        nifty.fromXml("Interface/Nifty/HelloJme.xml", "start", startScreen);
+        // Hide stats and FPS display
+        setDisplayFps(false);
+        setDisplayStatView(false);
 
-        // attach the nifty display to the gui view port as a processor
-        guiViewPort.addProcessor(niftyDisplay);
+        // Initialize Lemur
+        GuiGlobals.initialize(this);
 
-        // disable the fly cam
-//        flyCam.setEnabled(false);
-//        flyCam.setDragToRotate(true);
-        inputManager.setCursorVisible(true);
+        // Add the main menu state
+        mainMenuState = new MainMenuState(this);
+        getStateManager().attach(mainMenuState);
     }
 
-    /**
-     * This method should be called by the StartScreenController when the user
-     * clicks the "start game" button in the Nifty GUI.
-     */
-    public void transitionToGame() {
-        Main.startGameRequested = true;
+    public void startGame() {
+        // Detach the main menu state
+        getStateManager().detach(mainMenuState);
 
-        // Perform cleanup of Nifty GUI
-        if (niftyDisplay != null) {
-            guiViewPort.removeProcessor(niftyDisplay);
-        }
-        if (nifty != null) {
-            nifty.exit(); // Gracefully exit Nifty
-        }
-        inputManager.setCursorVisible(false); // Hide cursor before game starts
-        this.stop(); // Stop the Main (menu) application
+        // Start the game
+        Game game = new Game();
+        game.setSettings(gameSettings);
+        game.start();
+
+        // Stop the main menu app
+        this.stop();
     }
 }

@@ -5,29 +5,33 @@
 
     <!-- Include standard Nifty controls and styles -->
     <!-- Make sure these files are available in your classpath,
-         they usually come with nifty-default-controls.jar -->
+         they usually come with nifty-default-controls.jar.
+         If these are not found, Nifty might not render the button correctly or might error. -->
     <useStyles filename="nifty-default-styles.xml" />
     <useControls filename="nifty-default-controls.xml" />
 
     <!-- Screen Controller for this screen -->
-    <!-- The package name must match your StartScreenController's package -->
+    <!-- The package and class name must exactly match your StartScreenController.java -->
     <registerScreenController name="StartScreenController" class="ai_campus_life.StartScreenController"/>
 
     <!-- The Start Screen -->
     <screen id="start" controller="ai_campus_life.StartScreenController">
         <layer id="layer" childLayout="center">
-            <panel id="panel_center" height="25%" width="50%" align="center" valign="center"
-                   childLayout="vertical" backgroundColor="#555f">
-                <panel id="panel_top" height="50%" width="100%" childLayout="center">
+            <panel id="panel_center" height="30%" width="50%" align="center" valign="center"
+                   childLayout="vertical" backgroundColor="#333a" style="nifty-panel-bright"> <!-- Added a Nifty style for better looks -->
+                
+                <panel id="panel_top" height="40%" width="100%" childLayout="center" paddingTop="10px">
                     <control name="label" text="AI Campus Life" align="center" valign="center"
                              font="aurulent-sans-16.fnt" color="#ffff"/>
                 </panel>
-                <panel id="panel_bottom" height="50%" width="100%" childLayout="center">
+                
+                <panel id="panel_bottom" height="60%" width="100%" childLayout="center" padding="15px">
                     <control name="button" label="Start Game" id="StartButton"
-                             align="center" valign="center" width="50%" height="50%">
-                        <interact onClick="startGameClicked()"/>
+                             align="center" valign="center" width="60%" height="50%">
+                        <interact onClick="startGameClicked()"/> <!-- This is the magic line! -->
                     </control>
                 </panel>
+
             </panel>
         </layer>
     </screen>

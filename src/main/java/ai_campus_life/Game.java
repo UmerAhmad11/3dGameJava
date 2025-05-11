@@ -13,6 +13,7 @@ import com.jme3.input.KeyInput;
 import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.scene.Node;
+import com.jme3.system.AppSettings;
 
 //Main -> Simple Application which uses Analog Listener
 public class Game extends SimpleApplication implements AnalogListener{
@@ -27,6 +28,10 @@ public class Game extends SimpleApplication implements AnalogListener{
 
     public static void main(String[] args) {
         Game app = new Game();
+        AppSettings settings = new AppSettings(true);
+        settings.setTitle("Game Window");
+        settings.setResolution(1280, 720);
+        app.setSettings(settings);
         app.start();
     }
 
