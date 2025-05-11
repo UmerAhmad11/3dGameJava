@@ -2,10 +2,7 @@ package ai_campus_life;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.system.AppSettings;
-import com.simsilica.lemur.Button;
-import com.simsilica.lemur.Container;
 import com.simsilica.lemur.GuiGlobals;
-import com.simsilica.lemur.Label;
 
 public class Main extends SimpleApplication {
 
@@ -35,6 +32,7 @@ public class Main extends SimpleApplication {
 
         // Initialize Lemur
         GuiGlobals.initialize(this);
+        GuiGlobals.getInstance().getStyles().setDefaultStyle("glass"); // Apply a nice default style
 
         // Add the main menu state
         mainMenuState = new MainMenuState(this);
