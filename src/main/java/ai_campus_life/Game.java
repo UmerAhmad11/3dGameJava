@@ -6,7 +6,7 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Box;
-import com.jme3.scene.shape.RectangleMesh;
+//import com.jme3.scene.shape.RectangleMesh;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.Vector3f;
 import com.jme3.input.KeyInput;
@@ -17,6 +17,8 @@ import com.jme3.system.AppSettings;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
+import com.jme3.math.Vector2f;
+import com.jme3.texture.Texture;
 import com.jme3.bullet.collision.shapes.CollisionShape;
 
 //Main -> Simple Application which uses ActionListener and Bullet Physics
@@ -39,6 +41,12 @@ public class Game extends SimpleApplication implements ActionListener {
     private static final String MOVE_CUBE_LEFT = "MoveCubeLeft";
     private static final String MOVE_CUBE_RIGHT = "MoveCubeRight";
     private static final String JUMP_CUBE = "JumpCube";
+
+    private int jumpCount = 0;
+    private final int maxJumps = 2;
+    private final float groundThreshold = 0.01f; // Tune based on your physics
+    private boolean wasInAir = false;
+
     public static void main(String[] args) {
         Game app = new Game();
         AppSettings settings = new AppSettings(true);
@@ -62,8 +70,10 @@ public class Game extends SimpleApplication implements ActionListener {
         Box b = new Box(1, 1, 1);
         cubeGeometry = new Geometry("Cube", b);
         Material cubeMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        cubeMat.setColor("Color", ColorRGBA.Blue);
+        cubeMat.setColor("Color", ColorRGBA.Magenta);
         cubeGeometry.setMaterial(cubeMat);
+        
+        
 
         cubeNode = new Node("Cube Node");
         cubeNode.attachChild(cubeGeometry); // cubeGeometry is at (0,0,0) relative to cubeNode
@@ -82,10 +92,27 @@ public class Game extends SimpleApplication implements ActionListener {
         Box groundBox = new Box(25f, 0.1f, 25f); // Half-extents: 25 wide, 0.1 thick, 25 deep
         Geometry groundGeometry = new Geometry("Ground", groundBox);
         // Position its center so its top surface is at y = -1.0f
-        groundGeometry.setLocalTranslation(0, -1.0f - 0.1f, 0); 
+        groundGeometry.setLocalTranslation(0, -1.0f - 0.1f, 0);
+
+        // Load the texture for the ground
+        Texture dirtTexture = assetManager.loadTexture("Textures/dirt.png");
+
+        // Set the wrap mode to Repeat for tiling.
+        // This makes the texture repeat instead of clamping at the edges when UV coordinates go beyond [0,1].
+        dirtTexture.setWrap(Texture.WrapMode.Repeat);
+
+        // Create the ground material
         Material groundMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        groundMat.setTexture("ColorMap", assetManager.loadTexture("Textures/dirt.png"));
+        groundMat.setTexture("ColorMap", dirtTexture);
         groundGeometry.setMaterial(groundMat);
+
+        // Scale texture coordinates on the ground mesh to control tiling density.
+        // The Box primitive maps UVs from (0,0) to (1,1) per face.
+        // Scaling by (N, M) means the texture will repeat N times along U and M times along V.
+        // For the top face of the ground (50x50 units): if tileFactor is 25, the texture repeats 25 times.
+        float tileFactor = 25f; // Adjust this value to change tiling density
+        groundGeometry.getMesh().scaleTextureCoordinates(new Vector2f(tileFactor, tileFactor));
+
         rootNode.attachChild(groundGeometry);
 
         // Physical ground
@@ -121,6 +148,7 @@ public class Game extends SimpleApplication implements ActionListener {
 
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
+        
         if (name.equals(MOVE_CUBE_FORWARD)) {
             moveForward = isPressed;
         } else if (name.equals(MOVE_CUBE_BACKWARD)) {
@@ -129,13 +157,16 @@ public class Game extends SimpleApplication implements ActionListener {
             moveLeft = isPressed;
         } else if (name.equals(MOVE_CUBE_RIGHT)) {
             moveRight = isPressed;
-        } else if (name.equals(JUMP_CUBE) && isPressed) {
+        } else if (name.equals(JUMP_CUBE) && isPressed && jumpCount < maxJumps) {
             // Basic jump: Apply an upward impulse.
             // For a more robust jump, you'd add a check to see if the cube is on the ground.
             // For example: if (isOnGround()) { cubePhysicsControl.applyCentralImpulse(new Vector3f(0, jumpForce, 0)); }
             // Checking isOnGround() can be done by a short raycast downwards or checking if vertical velocity is near zero.
             // For now, we'll allow jumping anytime for simplicity.
             cubePhysicsControl.applyImpulse(new Vector3f(0, jumpForce, 5), Vector3f.ZERO);
+            jumpCount++;
+            
+            
         }
     }
 
@@ -192,5 +223,16 @@ public class Game extends SimpleApplication implements ActionListener {
             cam.setLocation(desiredCamLocation);
             cam.lookAt(cubePosition, Vector3f.UNIT_Y);
         }
+
+        float verticalVelocity = cubePhysicsControl.getLinearVelocity().y;
+        boolean isOnGround = Math.abs(verticalVelocity) < groundThreshold;
+
+        // Detect the transition: in air → on ground
+        if (isOnGround && wasInAir) {
+            jumpCount = 0;  // Reset only when it lands
+        }
+
+        // Update wasInAir flag
+        wasInAir = !isOnGround;
     }
 }
