@@ -10,22 +10,35 @@ import com.jme3.scene.shape.RectangleMesh;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.Vector3f;
 import com.jme3.input.KeyInput;
-import com.jme3.input.controls.AnalogListener;
+import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.scene.Node;
 import com.jme3.system.AppSettings;
+import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.bullet.collision.shapes.BoxCollisionShape;
+import com.jme3.bullet.collision.shapes.CollisionShape;
 
-//Main -> Simple Application which uses Analog Listener
-public class Game extends SimpleApplication implements AnalogListener{
-    private Geometry geom;
+//Main -> Simple Application which uses ActionListener and Bullet Physics
+public class Game extends SimpleApplication implements ActionListener {
+    private Geometry cubeGeometry;
     private Node cubeNode;
     private Vector3f cameraOffset;
+
+    private BulletAppState bulletAppState;
+    private RigidBodyControl cubePhysicsControl;
+
+    // Movement flags
+    private boolean moveForward, moveBackward, moveLeft, moveRight;
+    private Vector3f walkDirection = new Vector3f();
+    private float moveSpeed = 10f; // Horizontal speed of the cube
+    private float jumpForce = 15f; // Upward force for jumping
 
     private static final String MOVE_CUBE_FORWARD = "MoveCubeForward";
     private static final String MOVE_CUBE_BACKWARD = "MoveCubeBackward";
     private static final String MOVE_CUBE_LEFT = "MoveCubeLeft";
     private static final String MOVE_CUBE_RIGHT = "MoveCubeRight";
-
+    private static final String JUMP_CUBE = "JumpCube";
     public static void main(String[] args) {
         Game app = new Game();
         AppSettings settings = new AppSettings(true);
@@ -37,94 +50,147 @@ public class Game extends SimpleApplication implements AnalogListener{
 
     @Override
     public void simpleInitApp() {
-
         flyCam.setEnabled(false);
 
-        Box b = new Box(1, 1, 1);
-        geom = new Geometry("Cube", b);
-        geom.setLocalTranslation(0, 0, 0);
+        // Initialize physics
+        bulletAppState = new BulletAppState();
+        stateManager.attach(bulletAppState);
+        // For debugging physics shapes:
+        // bulletAppState.setDebugEnabled(true);
 
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", ColorRGBA.Blue);
-        geom.setMaterial(mat);
+        // Create the cube
+        Box b = new Box(1, 1, 1);
+        cubeGeometry = new Geometry("Cube", b);
+        Material cubeMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        cubeMat.setColor("Color", ColorRGBA.Blue);
+        cubeGeometry.setMaterial(cubeMat);
 
         cubeNode = new Node("Cube Node");
-        cubeNode.attachChild(geom);
+        cubeNode.attachChild(cubeGeometry); // cubeGeometry is at (0,0,0) relative to cubeNode
         rootNode.attachChild(cubeNode);
 
-        mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setTexture("ColorMap", assetManager.loadTexture("Textures/dirt.png"));
-        Geometry ground = new Geometry("ground", new RectangleMesh(
-                new Vector3f(-25, -1, 25),
-                new Vector3f(25, -1, 25),
-                new Vector3f(-25, -1, -25)));
-        ground.setMaterial(mat);
-        rootNode.attachChild(ground);
+        // Create physics control for the cube
+        CollisionShape cubeShape = new BoxCollisionShape(new Vector3f(1, 1, 1)); // Half-extents match the Box
+        cubePhysicsControl = new RigidBodyControl(cubeShape, 1f); // Mass = 1kg
+        cubeNode.addControl(cubePhysicsControl);
+        bulletAppState.getPhysicsSpace().add(cubePhysicsControl);
+        cubePhysicsControl.setGravity(new Vector3f(0, -30f, 0)); // Increase gravity a bit for a snappier feel
+        cubePhysicsControl.setPhysicsLocation(new Vector3f(0, 2f, 0)); // Start cube above the ground
+
+        // Create the ground (visual and physical)
+        // Visual ground
+        Box groundBox = new Box(25f, 0.1f, 25f); // Half-extents: 25 wide, 0.1 thick, 25 deep
+        Geometry groundGeometry = new Geometry("Ground", groundBox);
+        // Position its center so its top surface is at y = -1.0f
+        groundGeometry.setLocalTranslation(0, -1.0f - 0.1f, 0); 
+        Material groundMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        groundMat.setTexture("ColorMap", assetManager.loadTexture("Textures/dirt.png"));
+        groundGeometry.setMaterial(groundMat);
+        rootNode.attachChild(groundGeometry);
+
+        // Physical ground
+        CollisionShape groundShape = new BoxCollisionShape(new Vector3f(25f, 0.1f, 25f));
+        RigidBodyControl groundPhysicsControl = new RigidBodyControl(groundShape, 0); // Mass 0 for static
+        groundPhysicsControl.setPhysicsLocation(groundGeometry.getLocalTranslation()); // Match visual ground position
+        groundGeometry.addControl(groundPhysicsControl);
+        bulletAppState.getPhysicsSpace().add(groundPhysicsControl);
 
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.5f, -0.5f, -0.5f).normalizeLocal());
         sun.setColor(ColorRGBA.White);
         rootNode.addLight(sun);
 
+        // Camera setup
         cameraOffset = new Vector3f(0, 4f, 8f);
-        Vector3f initialCubePosition = cubeNode.getWorldTranslation();
+        Vector3f initialCubePosition = cubePhysicsControl.getPhysicsLocation(); // Use initial physics location
         cam.setLocation(initialCubePosition.add(cameraOffset));
         cam.lookAt(initialCubePosition, Vector3f.UNIT_Y);
-        initKeys();
+        
+        setupKeys();
     }
 
-    private void initKeys() {
+    private void setupKeys() {
         inputManager.addMapping(MOVE_CUBE_FORWARD, new KeyTrigger(KeyInput.KEY_UP));
         inputManager.addMapping(MOVE_CUBE_BACKWARD, new KeyTrigger(KeyInput.KEY_DOWN));
         inputManager.addMapping(MOVE_CUBE_LEFT, new KeyTrigger(KeyInput.KEY_LEFT));
         inputManager.addMapping(MOVE_CUBE_RIGHT, new KeyTrigger(KeyInput.KEY_RIGHT));
+        inputManager.addMapping(JUMP_CUBE, new KeyTrigger(KeyInput.KEY_SPACE));
 
-        inputManager.addListener(this, MOVE_CUBE_FORWARD, MOVE_CUBE_BACKWARD, MOVE_CUBE_LEFT, MOVE_CUBE_RIGHT);
+        inputManager.addListener(this, MOVE_CUBE_FORWARD, MOVE_CUBE_BACKWARD, MOVE_CUBE_LEFT, MOVE_CUBE_RIGHT, JUMP_CUBE);
     }
 
     @Override
-    public void onAnalog(String name, float value, float tpf) {
-        float moveSpeed = 20f;
-
-        Vector3f camForward = cam.getDirection().clone();
-        camForward.y = 0;
-        if (camForward.lengthSquared() > 0) {
-            camForward.normalizeLocal();
-        }
-
-        Vector3f camStrafeLeft = cam.getLeft().clone();
-        camStrafeLeft.y = 0;
-        if (camStrafeLeft.lengthSquared() > 0) {
-            camStrafeLeft.normalizeLocal();
-        }
-
-        camForward.multLocal(moveSpeed * tpf);
-        camStrafeLeft.multLocal(moveSpeed * tpf);
-
+    public void onAction(String name, boolean isPressed, float tpf) {
         if (name.equals(MOVE_CUBE_FORWARD)) {
-            cubeNode.move(camForward);
-        }
-        if (name.equals(MOVE_CUBE_BACKWARD)) {
-            cubeNode.move(camForward.negate());
-        }
-        if (name.equals(MOVE_CUBE_RIGHT)) {
-            cubeNode.move(camStrafeLeft.negate());
-        }
-        if (name.equals(MOVE_CUBE_LEFT)) {
-            cubeNode.move(camStrafeLeft);
+            moveForward = isPressed;
+        } else if (name.equals(MOVE_CUBE_BACKWARD)) {
+            moveBackward = isPressed;
+        } else if (name.equals(MOVE_CUBE_LEFT)) {
+            moveLeft = isPressed;
+        } else if (name.equals(MOVE_CUBE_RIGHT)) {
+            moveRight = isPressed;
+        } else if (name.equals(JUMP_CUBE) && isPressed) {
+            // Basic jump: Apply an upward impulse.
+            // For a more robust jump, you'd add a check to see if the cube is on the ground.
+            // For example: if (isOnGround()) { cubePhysicsControl.applyCentralImpulse(new Vector3f(0, jumpForce, 0)); }
+            // Checking isOnGround() can be done by a short raycast downwards or checking if vertical velocity is near zero.
+            // For now, we'll allow jumping anytime for simplicity.
+            cubePhysicsControl.applyImpulse(new Vector3f(0, jumpForce, 5), Vector3f.ZERO);
         }
     }
+
     @Override
     public void simpleUpdate(float tpf) {
         super.simpleUpdate(tpf);
+
+        // Player movement logic
+        Vector3f camDir = cam.getDirection().clone();
+        camDir.y = 0; // Movement is horizontal
+        if (camDir.lengthSquared() > 0) {
+            camDir.normalizeLocal();
+        } else {
+            camDir.set(Vector3f.UNIT_Z); // Default forward if camera is straight up/down
+        }
+
+        Vector3f camLeft = cam.getLeft().clone();
+        camLeft.y = 0; // Movement is horizontal
+         if (camLeft.lengthSquared() > 0) {
+            camLeft.normalizeLocal();
+        } else {
+            camLeft.set(Vector3f.UNIT_X.negate()); // Default left
+        }
+
+        walkDirection.set(0, 0, 0);
+        if (moveForward) {
+            walkDirection.addLocal(camDir);
+        }
+        if (moveBackward) {
+            walkDirection.addLocal(camDir.negate());
+        }
+        if (moveLeft) {
+            walkDirection.addLocal(camLeft);
+        }
+        if (moveRight) {
+            walkDirection.addLocal(camLeft.negate());
+        }
+
+        Vector3f currentPhysicsVelocity = cubePhysicsControl.getLinearVelocity();
+        if (walkDirection.lengthSquared() > 0) {
+            walkDirection.normalizeLocal().multLocal(moveSpeed); // Scale to desired speed
+            // Apply horizontal movement, preserve existing vertical velocity (for gravity/jumping)
+            cubePhysicsControl.setLinearVelocity(new Vector3f(walkDirection.x, currentPhysicsVelocity.y, walkDirection.z));
+        } else {
+            // No input, stop horizontal movement, preserve vertical velocity
+            cubePhysicsControl.setLinearVelocity(new Vector3f(0, currentPhysicsVelocity.y, 0));
+        }
+
+        // Camera follow logic
         if (cubeNode != null && cam != null && cameraOffset != null) {
-            Vector3f cubePosition = cubeNode.getWorldTranslation();
-
+            // cubeNode's world translation is now updated by the physics system
+            Vector3f cubePosition = cubeNode.getWorldTranslation(); 
             Vector3f desiredCamLocation = cubePosition.add(cameraOffset);
-
             cam.setLocation(desiredCamLocation);
             cam.lookAt(cubePosition, Vector3f.UNIT_Y);
         }
     }
-
 }
