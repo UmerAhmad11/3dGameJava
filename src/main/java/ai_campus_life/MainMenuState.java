@@ -17,6 +17,9 @@ import com.simsilica.lemur.HAlignment;
 import com.simsilica.lemur.Insets3f;
 import com.simsilica.lemur.component.BoxLayout;
 import com.simsilica.lemur.component.QuadBackgroundComponent;
+import com.simsilica.lemur.effect.*;
+import com.simsilica.lemur.effect.AbstractEffect;
+;
 
 public class MainMenuState extends BaseAppState {
 
@@ -30,56 +33,56 @@ public class MainMenuState extends BaseAppState {
 
     @Override
     protected void initialize(Application app) {
-        // Ensure Lemur is initialized. If Main.java already does this (recommended),
-        // this call is harmless and ensures it's initialized if this state is used standalone.
         GuiGlobals.initialize(app);
-        // The "glass" style should be set as default in Main.java for consistency.
 
         guiNode = ((SimpleApplication) app).getGuiNode();
 
-        // Create the main menu container
+        // Create the full-screen menu container
         menu = new Container();
-        // Use BoxLayout for vertical arrangement of elements
-        menu.setLayout(new BoxLayout(Axis.Y, FillMode.None));
-        // Add padding inside the container
-        menu.setInsets(new Insets3f(15, 15, 15, 15)); // top, left, bottom, right
-        // Set a semi-transparent background for the container
+        menu.setLayout(new BoxLayout(Axis.Y, FillMode.Even)); // Stretch children equally
+        menu.setInsets(new Insets3f(50, 50, 50, 50)); // Optional padding inside the full screen
         menu.setBackground(new QuadBackgroundComponent(new ColorRGBA(0.1f, 0.15f, 0.2f, 0.85f)));
 
-        // Add a title label
-        Label titleLabel = new Label("Main Menu");
-        titleLabel.setFontSize(28f); // Larger font for the title
-        titleLabel.setTextHAlignment(HAlignment.Center); // Center the text
-        titleLabel.setInsets(new Insets3f(5, 5, 20, 5)); // Padding: top, left, bottom, right
+        // Set the container to fill the whole screen
+        float width = app.getCamera().getWidth();
+        float height = app.getCamera().getHeight();
+        menu.setPreferredSize(new Vector3f(width, height, 0));
+        menu.setLocalTranslation(0, height, 0); // GUI origin is bottom-left, Lemur's top-left is y-aligned to top
+
+        // Add a centered title label
+        Label titleLabel = new Label("Campus Life");
+        titleLabel.setFontSize(28f);
+        titleLabel.setTextHAlignment(HAlignment.Center);
+        titleLabel.setInsets(new Insets3f(20, 5, 20, 5));
         menu.addChild(titleLabel);
 
-        // Add the start button
-        Button startButton = menu.addChild(new Button("Start Game"));
-        startButton.setFontSize(20f);
+        // Create a tightly wrapped container
+        Container buttonContainer = new Container(new BoxLayout(Axis.Y, FillMode.None));
+        buttonContainer.setBackground(new QuadBackgroundComponent(ColorRGBA.DarkGray));
+        buttonContainer.setInsets(new Insets3f(5, 5, 5, 5));
+
+        // Add to the menu
+        menu.addChild(buttonContainer);
+
+        // Add the button to the container
+        Button startButton = buttonContainer.addChild(new Button("Start Life"));
+        startButton.setFontSize(22f);
         startButton.setTextHAlignment(HAlignment.Center);
-        startButton.setInsets(new Insets3f(10, 10, 10, 10)); // Padding for the button
+        startButton.setInsets(new Insets3f(10, 20, 10, 20)); // More padding inside the button
         startButton.addClickCommands(source -> mainApp.startGame());
 
         // Add an exit button
-        Button exitButton = new Button("Exit");
-        exitButton.setFontSize(20f);
+        Button exitButton = menu.addChild(new Button("I gotta dip!"));
+        exitButton.setFontSize(22f);
         exitButton.setTextHAlignment(HAlignment.Center);
         exitButton.setInsets(new Insets3f(10, 10, 10, 10));
-        exitButton.addClickCommands(source -> mainApp.stop()); // Exit the application
+        exitButton.addClickCommands(source -> mainApp.stop());
         menu.addChild(exitButton);
 
-        // Calculate the preferred size of the menu *after* adding all children
-        Vector3f preferredSize = menu.getPreferredSize();
-
-        // Center the menu on the screen
-        // The guiNode's origin (0,0) is the bottom-left of the screen.
-        float x = (app.getCamera().getWidth() - preferredSize.x) / 2;
-        float y = (app.getCamera().getHeight() - preferredSize.y) / 2;
-        menu.setLocalTranslation(x, y, 0);
-
-        // Attach the menu to the GUI node
+        // Attach to GUI
         guiNode.attachChild(menu);
     }
+
     
 
     @Override
