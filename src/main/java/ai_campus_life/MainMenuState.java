@@ -18,8 +18,6 @@ import com.simsilica.lemur.Insets3f;
 import com.simsilica.lemur.component.BoxLayout;
 import com.simsilica.lemur.component.QuadBackgroundComponent;
 import com.simsilica.lemur.effect.*;
-import com.simsilica.lemur.effect.AbstractEffect;
-;
 
 public class MainMenuState extends BaseAppState {
 
@@ -34,54 +32,63 @@ public class MainMenuState extends BaseAppState {
     @Override
     protected void initialize(Application app) {
         GuiGlobals.initialize(app);
-
         guiNode = ((SimpleApplication) app).getGuiNode();
 
-        // Create the full-screen menu container
-        menu = new Container();
-        menu.setLayout(new BoxLayout(Axis.Y, FillMode.Even)); // Stretch children equally
-        menu.setInsets(new Insets3f(50, 50, 50, 50)); // Optional padding inside the full screen
-        menu.setBackground(new QuadBackgroundComponent(new ColorRGBA(0.1f, 0.15f, 0.2f, 0.85f)));
-
-        // Set the container to fill the whole screen
         float width = app.getCamera().getWidth();
         float height = app.getCamera().getHeight();
-        menu.setPreferredSize(new Vector3f(width, height, 0));
-        menu.setLocalTranslation(0, height, 0); // GUI origin is bottom-left, Lemur's top-left is y-aligned to top
 
-        // Add a centered title label
+        // === OUTER full-screen container ===
+        menu = new Container();
+        menu.setPreferredSize(new Vector3f(width, height, 0));
+        menu.setLocalTranslation(0, height, 0); // Align to top-left (Lemur origin)
+
+        // Background (optional)
+        menu.setBackground(new QuadBackgroundComponent(new ColorRGBA(0.5f, 0.25f, 0.2f, 0.85f)));
+
+        // === INNER centered container ===
+        Container centerContainer = new Container(new BoxLayout(Axis.Y, FillMode.None));
+        centerContainer.setLocalTranslation((width - 300) / 2, height / 2 + 100, 0); // X-centered, Y mid-screen
+        centerContainer.setPreferredSize(new Vector3f(300, 0, 0)); // Fixed width, height auto
+
+        // Title
         Label titleLabel = new Label("Campus Life");
-        titleLabel.setFontSize(28f);
+        titleLabel.setFontSize(70f);
+        titleLabel.setColor(ColorRGBA.Black);
         titleLabel.setTextHAlignment(HAlignment.Center);
         titleLabel.setInsets(new Insets3f(20, 5, 20, 5));
-        menu.addChild(titleLabel);
+        centerContainer.addChild(titleLabel);
 
-        // Create a tightly wrapped container
-        Container buttonContainer = new Container(new BoxLayout(Axis.Y, FillMode.None));
-        buttonContainer.setBackground(new QuadBackgroundComponent(ColorRGBA.DarkGray));
-        buttonContainer.setInsets(new Insets3f(5, 5, 5, 5));
-
-        // Add to the menu
-        menu.addChild(buttonContainer);
-
-        // Add the button to the container
-        Button startButton = buttonContainer.addChild(new Button("Start Life"));
-        startButton.setFontSize(22f);
+        // Start Button
+        Button startButton = new Button("Start Life :D");
+        startButton.setFontSize(35f);
+        startButton.setInsets(new Insets3f(10, 10, 10, 10));
         startButton.setTextHAlignment(HAlignment.Center);
-        startButton.setInsets(new Insets3f(10, 20, 10, 20)); // More padding inside the button
         startButton.addClickCommands(source -> mainApp.startGame());
+        centerContainer.addChild(startButton);
 
-        // Add an exit button
-        Button exitButton = menu.addChild(new Button("I gotta dip!"));
-        exitButton.setFontSize(22f);
-        exitButton.setTextHAlignment(HAlignment.Center);
+        // Exit Button
+        Button exitButton = new Button("I gotta dip :(");
+        exitButton.setFontSize(35f);
         exitButton.setInsets(new Insets3f(10, 10, 10, 10));
+        exitButton.setTextHAlignment(HAlignment.Center);
         exitButton.addClickCommands(source -> mainApp.stop());
-        menu.addChild(exitButton);
+        centerContainer.addChild(exitButton);
+
+        // Name
+        Label nameLabel = new Label("By: Syed Umer Ahmad");
+        nameLabel.setFontSize(70f);
+        nameLabel.setColor(ColorRGBA.Black);
+        nameLabel.setTextHAlignment(HAlignment.Center);
+        nameLabel.setInsets(new Insets3f(20, 5, 20, 5));
+        centerContainer.addChild(nameLabel);
+
+        // Add inner container to full-screen container
+        menu.addChild(centerContainer);
 
         // Attach to GUI
         guiNode.attachChild(menu);
     }
+
 
     
 
