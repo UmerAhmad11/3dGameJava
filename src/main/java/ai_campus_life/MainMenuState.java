@@ -44,6 +44,7 @@ public class MainMenuState extends BaseAppState {
 
         // Background (optional)
         menu.setBackground(new QuadBackgroundComponent(new ColorRGBA(0.5f, 0.25f, 0.2f, 0.85f)));
+        
 
         // === INNER centered container ===
         Container centerContainer = new Container(new BoxLayout(Axis.Y, FillMode.None));
@@ -61,7 +62,7 @@ public class MainMenuState extends BaseAppState {
         // Start Button
         Button startButton = new Button("Start Life :D");
         startButton.setFontSize(35f);
-        startButton.setInsets(new Insets3f(10, 10, 10, 10));
+        startButton.setInsets(new Insets3f(10, 545, 10, 545));
         startButton.setTextHAlignment(HAlignment.Center);
         startButton.addClickCommands(source -> mainApp.startGame());
         centerContainer.addChild(startButton);
@@ -69,7 +70,7 @@ public class MainMenuState extends BaseAppState {
         // Exit Button
         Button exitButton = new Button("I gotta dip :(");
         exitButton.setFontSize(35f);
-        exitButton.setInsets(new Insets3f(10, 10, 10, 10));
+        exitButton.setInsets(new Insets3f(10, 545, 10, 545));
         exitButton.setTextHAlignment(HAlignment.Center);
         exitButton.addClickCommands(source -> mainApp.stop());
         centerContainer.addChild(exitButton);
@@ -88,9 +89,6 @@ public class MainMenuState extends BaseAppState {
         // Attach to GUI
         guiNode.attachChild(menu);
     }
-
-
-    
 
     @Override
     protected void cleanup(Application app) {
