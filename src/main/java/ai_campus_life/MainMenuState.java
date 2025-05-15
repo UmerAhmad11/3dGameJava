@@ -53,7 +53,7 @@ public class MainMenuState extends BaseAppState {
 
         // Title
         Label titleLabel = new Label("Campus Life");
-        titleLabel.setFontSize(70f);
+        titleLabel.setFontSize(100f);
         titleLabel.setColor(ColorRGBA.Black);
         titleLabel.setTextHAlignment(HAlignment.Center);
         titleLabel.setInsets(new Insets3f(20, 5, 20, 5));
@@ -62,7 +62,7 @@ public class MainMenuState extends BaseAppState {
         // Start Button
         Button startButton = new Button("Start Life :D");
         startButton.setFontSize(35f);
-        startButton.setInsets(new Insets3f(10, 545, 10, 545));
+        startButton.setInsets(new Insets3f(180, 545, 10, 545));
         startButton.setTextHAlignment(HAlignment.Center);
         startButton.addClickCommands(source -> mainApp.startGame());
         centerContainer.addChild(startButton);
@@ -80,7 +80,7 @@ public class MainMenuState extends BaseAppState {
         nameLabel.setFontSize(70f);
         nameLabel.setColor(ColorRGBA.Black);
         nameLabel.setTextHAlignment(HAlignment.Center);
-        nameLabel.setInsets(new Insets3f(20, 5, 20, 5));
+        nameLabel.setInsets(new Insets3f(160, 5, 20, 5));
         centerContainer.addChild(nameLabel);
 
         // Add inner container to full-screen container
