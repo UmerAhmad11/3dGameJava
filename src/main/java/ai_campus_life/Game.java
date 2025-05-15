@@ -13,12 +13,14 @@ import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.math.Vector2f;
 import com.jme3.texture.Texture;
+import com.jme3.util.SkyFactory;
 import com.jme3.bullet.collision.shapes.CollisionShape;
 
 //Main -> Simple Application which uses ActionListener and Bullet Physics
@@ -60,81 +62,86 @@ public class Game extends SimpleApplication implements ActionListener {
     public void simpleInitApp() {
         flyCam.setEnabled(false);
 
-        // Initialize physics
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
-        // For debugging physics shapes:
         // bulletAppState.setDebugEnabled(true);
 
-        // Create the cube
+        // === Skybox === USING OLD SKYBOX DDS
+        //rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Sky/skybox.dds", SkyFactory.EnvMapType.CubeMap));
+
+        Texture skyTexture = assetManager.loadTexture("Textures/Sky/bluesky.png");
+
+        // === Skybox === USINNG PNG
+        Spatial sky = SkyFactory.createSky(
+            assetManager,
+            skyTexture, // right
+            skyTexture, // left
+            skyTexture, // top
+            skyTexture, // bottom
+            skyTexture, // back
+            skyTexture  // front
+        );
+        rootNode.attachChild(sky);
+
+        // === Create cube ===
         Box b = new Box(1, 1, 1);
         cubeGeometry = new Geometry("Cube", b);
         Material cubeMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         cubeMat.setColor("Color", ColorRGBA.Magenta);
         cubeGeometry.setMaterial(cubeMat);
-        
-        
 
         cubeNode = new Node("Cube Node");
-        cubeNode.attachChild(cubeGeometry); // cubeGeometry is at (0,0,0) relative to cubeNode
+        cubeNode.attachChild(cubeGeometry);
         rootNode.attachChild(cubeNode);
 
-        // Create physics control for the cube
-        CollisionShape cubeShape = new BoxCollisionShape(new Vector3f(1, 1, 1)); // Half-extents match the Box
-        cubePhysicsControl = new RigidBodyControl(cubeShape, 1f); // Mass = 1kg
+        CollisionShape cubeShape = new BoxCollisionShape(new Vector3f(1, 1, 1));
+        cubePhysicsControl = new RigidBodyControl(cubeShape, 1f);
         cubeNode.addControl(cubePhysicsControl);
         bulletAppState.getPhysicsSpace().add(cubePhysicsControl);
-        cubePhysicsControl.setGravity(new Vector3f(0, -30f, 0)); // Increase gravity a bit for a snappier feel
-        cubePhysicsControl.setPhysicsLocation(new Vector3f(0, 2f, 0)); // Start cube above the ground
+        cubePhysicsControl.setGravity(new Vector3f(0, -30f, 0));
+        cubePhysicsControl.setPhysicsLocation(new Vector3f(0, 2f, 0));
 
-        // Create the ground (visual and physical)
-        // Visual ground
-        Box groundBox = new Box(25f, 0.1f, 25f); // Half-extents: 25 wide, 0.1 thick, 25 deep
+        // === Create ground ===
+        Box groundBox = new Box(25f, 0.1f, 25f);
         Geometry groundGeometry = new Geometry("Ground", groundBox);
-        // Position its center so its top surface is at y = -1.0f
-        groundGeometry.setLocalTranslation(0, -1.0f - 0.1f, 0);
+        groundGeometry.setLocalTranslation(0, -1.1f, 0);
 
-        // Load the texture for the ground
         Texture dirtTexture = assetManager.loadTexture("Textures/dirt.png");
-
-        // Set the wrap mode to Repeat for tiling.
-        // This makes the texture repeat instead of clamping at the edges when UV coordinates go beyond [0,1].
         dirtTexture.setWrap(Texture.WrapMode.Repeat);
 
-        // Create the ground material
         Material groundMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         groundMat.setTexture("ColorMap", dirtTexture);
         groundGeometry.setMaterial(groundMat);
-
-        // Scale texture coordinates on the ground mesh to control tiling density.
-        // The Box primitive maps UVs from (0,0) to (1,1) per face.
-        // Scaling by (N, M) means the texture will repeat N times along U and M times along V.
-        // For the top face of the ground (50x50 units): if tileFactor is 25, the texture repeats 25 times.
-        float tileFactor = 25f; // Adjust this value to change tiling density
-        groundGeometry.getMesh().scaleTextureCoordinates(new Vector2f(tileFactor, tileFactor));
+        groundGeometry.getMesh().scaleTextureCoordinates(new Vector2f(25f, 25f));
 
         rootNode.attachChild(groundGeometry);
 
-        // Physical ground
         CollisionShape groundShape = new BoxCollisionShape(new Vector3f(25f, 0.1f, 25f));
-        RigidBodyControl groundPhysicsControl = new RigidBodyControl(groundShape, 0); // Mass 0 for static
-        groundPhysicsControl.setPhysicsLocation(groundGeometry.getLocalTranslation()); // Match visual ground position
+        RigidBodyControl groundPhysicsControl = new RigidBodyControl(groundShape, 0);
+        groundPhysicsControl.setPhysicsLocation(groundGeometry.getLocalTranslation());
         groundGeometry.addControl(groundPhysicsControl);
         bulletAppState.getPhysicsSpace().add(groundPhysicsControl);
 
+        // === Directional Light ===
         DirectionalLight sun = new DirectionalLight();
         sun.setDirection(new Vector3f(-0.5f, -0.5f, -0.5f).normalizeLocal());
         sun.setColor(ColorRGBA.White);
         rootNode.addLight(sun);
 
-        // Camera setup
+        // === Obstacles ===
+        addObstacle(new Vector3f(5, 0, 5), new Vector3f(2, 0.5f, 2));
+        addObstacle(new Vector3f(-6, 1, -4), new Vector3f(1, 1, 1));
+        addObstacle(new Vector3f(0, 0.3f, -6), new Vector3f(3, 0.3f, 1.5f));
+
+        // === Camera ===
         cameraOffset = new Vector3f(0, 4f, 8f);
-        Vector3f initialCubePosition = cubePhysicsControl.getPhysicsLocation(); // Use initial physics location
+        Vector3f initialCubePosition = cubePhysicsControl.getPhysicsLocation();
         cam.setLocation(initialCubePosition.add(cameraOffset));
         cam.lookAt(initialCubePosition, Vector3f.UNIT_Y);
-        
+
         setupKeys();
     }
+
 
     private void setupKeys() {
         inputManager.addMapping(MOVE_CUBE_FORWARD, new KeyTrigger(KeyInput.KEY_UP));
@@ -235,4 +242,22 @@ public class Game extends SimpleApplication implements ActionListener {
         // Update wasInAir flag
         wasInAir = !isOnGround;
     }
+
+    private void addObstacle(Vector3f position, Vector3f halfExtents) {
+        Box box = new Box(halfExtents.x, halfExtents.y, halfExtents.z);
+        Geometry obstacle = new Geometry("Obstacle", box);
+        obstacle.setLocalTranslation(position);
+    
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.setColor("Color", ColorRGBA.Gray);
+        obstacle.setMaterial(mat);
+    
+        CollisionShape shape = new BoxCollisionShape(halfExtents);
+        RigidBodyControl control = new RigidBodyControl(shape, 0); // static
+        obstacle.addControl(control);
+        bulletAppState.getPhysicsSpace().add(control);
+    
+        rootNode.attachChild(obstacle);
+    }
+    
 }
