@@ -163,7 +163,7 @@ public class Game extends SimpleApplication implements ActionListener {
             // For example: if (isOnGround()) { cubePhysicsControl.applyCentralImpulse(new Vector3f(0, jumpForce, 0)); }
             // Checking isOnGround() can be done by a short raycast downwards or checking if vertical velocity is near zero.
             // For now, we'll allow jumping anytime for simplicity.
-            cubePhysicsControl.applyImpulse(new Vector3f(0, jumpForce, 5), Vector3f.ZERO);
+            cubePhysicsControl.applyImpulse(new Vector3f(0, jumpForce, 0), Vector3f.ZERO);
             jumpCount++;
             
             
