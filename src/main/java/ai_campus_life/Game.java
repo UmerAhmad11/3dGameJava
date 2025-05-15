@@ -284,36 +284,55 @@ public class Game extends SimpleApplication implements ActionListener {
         }*/
 
         // === Scattered + Reachable + Climbable Platforms ===
+        // === Scattered + Reachable + Climbable Platforms (Improved) ===
         int numPlatforms = 50;
         float groundSize = 25f;
         float minY = 2f;
         float maxY = 60f;
         float maxJumpXZ = 6f;
         float maxJumpY = 4.5f;
+        float minHorizontalDistance = 3f;
+        float minVerticalDistance = 2.2f;
 
         ArrayList<Vector3f> scatteredPositions = new ArrayList<>();
+        int attempts = 0;
+        int maxAttempts = 2000;
 
-        // Step 1: Random scattered positions in x/z, random height
-        for (int i = 0; i < numPlatforms; i++) {
+        // Step 1: Generate valid scattered positions with spacing
+        while (scatteredPositions.size() < numPlatforms && attempts < maxAttempts) {
+            attempts++;
+
             float x = FastMath.nextRandomFloat() * groundSize * 2f - groundSize;
             float z = FastMath.nextRandomFloat() * groundSize * 2f - groundSize;
             float y = FastMath.nextRandomFloat() * (maxY - minY) + minY;
-            scatteredPositions.add(new Vector3f(x, y, z));
+            Vector3f candidate = new Vector3f(x, y, z);
+
+            boolean valid = true;
+            for (Vector3f other : scatteredPositions) {
+                float horizDist = new Vector2f(candidate.x, candidate.z).distance(new Vector2f(other.x, other.z));
+                float vertDist = Math.abs(candidate.y - other.y);
+                if (horizDist < minHorizontalDistance && vertDist < minVerticalDistance) {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (valid) {
+                scatteredPositions.add(candidate);
+            }
         }
 
-        // Step 2: Sort by Y (height) to ensure climb direction
+        // Step 2: Sort by height (Y) so climbing goes up
         scatteredPositions.sort(Comparator.comparingDouble(v -> v.y));
 
-        // Step 3: Build platform chain from sorted list
+        // Step 3: Build reachable platform chain
         for (int i = 0; i < scatteredPositions.size(); i++) {
             Vector3f pos = scatteredPositions.get(i);
 
-            // Adjust next platform if the jump is too far
             if (i > 0) {
                 Vector3f last = scatteredPositions.get(i - 1);
                 Vector3f diff = pos.subtract(last);
 
-                // Clamp horizontal range
                 float dx = FastMath.clamp(diff.x, -maxJumpXZ, maxJumpXZ);
                 float dz = FastMath.clamp(diff.z, -maxJumpXZ, maxJumpXZ);
                 float dy = FastMath.clamp(diff.y, 1f, maxJumpY);
@@ -322,14 +341,13 @@ public class Game extends SimpleApplication implements ActionListener {
                 scatteredPositions.set(i, pos);
             }
 
-            // Platform size shrinks as we go up
             float size = FastMath.clamp(2f - i * 0.03f + FastMath.nextRandomFloat(), 0.6f, 2.5f);
             Vector3f platformSize = new Vector3f(size, 0.3f, size);
 
             Geometry platform = new Geometry("Platform" + i, new Box(platformSize.x, platformSize.y, platformSize.z));
             platform.setLocalTranslation(pos);
 
-            ColorRGBA color = (i % 2 == 0) ? ColorRGBA.Green : ColorRGBA.fromRGBA255(211, 84, 0, 0);
+            ColorRGBA color = (i % 2 == 0) ? ColorRGBA.Green : ColorRGBA.fromRGBA255(211, 84, 0, 0); // Your orange
             Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
             mat.setColor("Color", color);
             platform.setMaterial(mat);
@@ -339,6 +357,7 @@ public class Game extends SimpleApplication implements ActionListener {
             bulletAppState.getPhysicsSpace().add(control);
             rootNode.attachChild(platform);
         }
+
 
 
 
