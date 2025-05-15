@@ -1,5 +1,8 @@
 package ai_campus_life;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+
 //Import Libraries
 import com.jme3.app.SimpleApplication;
 import com.jme3.material.Material;
@@ -132,10 +135,214 @@ public class Game extends SimpleApplication implements ActionListener {
         sun.setColor(ColorRGBA.White);
         rootNode.addLight(sun);
 
-        // === Obstacles ===
-        addObstacle(new Vector3f(5, 0, 5), new Vector3f(2, 0.5f, 2));
-        addObstacle(new Vector3f(-6, 1, -4), new Vector3f(1, 1, 1));
-        addObstacle(new Vector3f(0, 0.3f, -6), new Vector3f(3, 0.3f, 1.5f));
+       // === Jump-heavy Spiral Platforms ===
+       /*  Vector3f center = new Vector3f(0, 0, 0);
+        int numPlatforms = 25;
+        float angleStep = FastMath.TWO_PI / 6f; // tighter rotation
+        float radius = 6f;
+
+        for (int i = 0; i < numPlatforms; i++) {
+            float angle = i * angleStep;
+            
+            float height = i * 2.5f + FastMath.rand.nextFloat(); // high vertical gaps
+            float x = center.x + FastMath.cos(angle) * radius + FastMath.rand.nextFloat() * 2f;
+            float z = center.z + FastMath.sin(angle) * radius + FastMath.rand.nextFloat() * 2f;
+
+            float size = 2f - (i * 0.05f); // gradually smaller platforms
+            size = FastMath.clamp(size, 0.6f, 2f); // avoid going below 0.6
+            Vector3f platformSize = new Vector3f(size, 0.3f, size);
+
+            addObstacle(new Vector3f(x, height, z), platformSize);
+        }*/
+
+        // === Platforming Tower ===
+       /*  int numPlatforms = 30;
+        float baseHeight = 1f;
+        float verticalGap = 2.8f;
+
+        Vector3f lastPos = new Vector3f(0, baseHeight, 0);
+
+        for (int i = 0; i < numPlatforms; i++) {
+            // Random horizontal offset from previous platform
+            float xOffset = FastMath.nextRandomFloat() * 6f - 3f;  // [-3, 3]
+            float zOffset = FastMath.nextRandomFloat() * 6f - 3f;  // [-3, 3]
+            float yOffset = verticalGap + FastMath.nextRandomFloat() * 1.2f;
+
+            Vector3f newPos = lastPos.add(new Vector3f(xOffset, yOffset, zOffset));
+
+            // Shrink platforms as player climbs
+            float size = FastMath.clamp(2f - i * 0.05f, 0.7f, 2f);
+            Vector3f platformSize = new Vector3f(size, 0.3f, size);
+
+            addObstacle(newPos, platformSize);
+
+            lastPos = newPos;
+        }*/
+
+        // === Scattered Vertical Platforming Playground ===
+    /*  int numPlatforms = 40;
+        float groundSize = 25f;  // Match your ground dimensions
+        float maxHeight = 60f;
+        float minHeight = 2f;
+
+        for (int i = 0; i < numPlatforms; i++) {
+            // Random horizontal position across full ground area
+            float x = FastMath.nextRandomFloat() * groundSize * 2f - groundSize;
+            float z = FastMath.nextRandomFloat() * groundSize * 2f - groundSize;
+
+            // Upward trend with randomness
+            float y = minHeight + (i * (maxHeight - minHeight) / numPlatforms)
+                    + FastMath.nextRandomFloat() * 2f;
+
+            // Some platforms larger, some smaller
+            float size = FastMath.nextRandomFloat() * 1.5f + 0.5f; // [0.5, 2.0]
+            Vector3f platformSize = new Vector3f(size, 0.3f, size);
+
+            addObstacle(new Vector3f(x, y, z), platformSize);
+        }*/
+
+        // === Designed Parkour Path (Jumpable Chain) ===
+/*      int numPlatforms = 40;
+        float jumpRangeXZ = 5f; // Max horizontal jump reach
+        float jumpHeight = 3.5f; // Max vertical jump reach
+        float startY = 1.5f;
+
+        Vector3f lastPos = new Vector3f(0, startY, 0);
+
+        for (int i = 0; i < numPlatforms; i++) {
+            // Random reachable offset
+            float xOffset = FastMath.nextRandomFloat() * jumpRangeXZ * 2f - jumpRangeXZ;
+            float zOffset = FastMath.nextRandomFloat() * jumpRangeXZ * 2f - jumpRangeXZ;
+            float yOffset = FastMath.nextRandomFloat() * jumpHeight;
+
+            Vector3f newPos = lastPos.add(new Vector3f(xOffset, yOffset, zOffset));
+
+            // Random size: big early, small later
+            float size = FastMath.clamp(2f - i * 0.04f + FastMath.nextRandomFloat() * 0.5f, 0.6f, 2f);
+            Vector3f platformSize = new Vector3f(size, 0.3f, size);
+
+            // === Colored platform ===
+            Geometry platform = new Geometry("Platform" + i, new Box(platformSize.x, platformSize.y, platformSize.z));
+            platform.setLocalTranslation(newPos);
+
+            // Random color: green or orange
+            ColorRGBA color = FastMath.nextRandomFloat() > 0.5f ? ColorRGBA.Orange : ColorRGBA.Green;
+            Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+            mat.setColor("Color", color);
+            platform.setMaterial(mat);
+
+            // Add physics
+            RigidBodyControl control = new RigidBodyControl(new BoxCollisionShape(platformSize), 0);
+            platform.addControl(control);
+            bulletAppState.getPhysicsSpace().add(control);
+
+            rootNode.attachChild(platform);
+
+            lastPos = newPos;
+        } */
+
+        // === True 3D Platforming Playground ===
+        /* 
+        int numPlatforms = 50;
+        float groundSize = 25f;
+        float maxJumpXZ = 6f;
+        float maxJumpY = 4f;
+
+        Vector3f currentPos = new Vector3f(0, 2f, 0); // Start above ground
+
+        for (int i = 0; i < numPlatforms; i++) {
+            // Random jumpable offset
+            float xOffset = FastMath.nextRandomFloat() * maxJumpXZ * 2f - maxJumpXZ;
+            float zOffset = FastMath.nextRandomFloat() * maxJumpXZ * 2f - maxJumpXZ;
+            float yOffset = FastMath.nextRandomFloat() * maxJumpY * 0.7f + 2f; // Always go up at least 2
+
+            Vector3f nextPos = currentPos.add(new Vector3f(xOffset, yOffset, zOffset));
+
+            // Make sure it stays over ground area
+            nextPos.x = FastMath.clamp(nextPos.x, -groundSize + 3f, groundSize - 3f);
+            nextPos.z = FastMath.clamp(nextPos.z, -groundSize + 3f, groundSize - 3f);
+
+            float size = FastMath.clamp(2f - i * 0.035f + FastMath.nextRandomFloat(), 0.6f, 2.2f);
+            Vector3f platformSize = new Vector3f(size, 0.3f, size);
+
+            // Create platform
+            Geometry platform = new Geometry("Platform" + i, new Box(platformSize.x, platformSize.y, platformSize.z));
+            platform.setLocalTranslation(nextPos);
+
+            // Alternate colors
+            ColorRGBA color = (i % 2 == 0) ? ColorRGBA.Orange : ColorRGBA.Green;
+            Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+            mat.setColor("Color", color);
+            platform.setMaterial(mat);
+
+            RigidBodyControl control = new RigidBodyControl(new BoxCollisionShape(platformSize), 0);
+            platform.addControl(control);
+            bulletAppState.getPhysicsSpace().add(control);
+            rootNode.attachChild(platform);
+
+            currentPos = nextPos; // move to next start point
+        }*/
+
+        // === Scattered + Reachable + Climbable Platforms ===
+        int numPlatforms = 50;
+        float groundSize = 25f;
+        float minY = 2f;
+        float maxY = 60f;
+        float maxJumpXZ = 6f;
+        float maxJumpY = 4.5f;
+
+        ArrayList<Vector3f> scatteredPositions = new ArrayList<>();
+
+        // Step 1: Random scattered positions in x/z, random height
+        for (int i = 0; i < numPlatforms; i++) {
+            float x = FastMath.nextRandomFloat() * groundSize * 2f - groundSize;
+            float z = FastMath.nextRandomFloat() * groundSize * 2f - groundSize;
+            float y = FastMath.nextRandomFloat() * (maxY - minY) + minY;
+            scatteredPositions.add(new Vector3f(x, y, z));
+        }
+
+        // Step 2: Sort by Y (height) to ensure climb direction
+        scatteredPositions.sort(Comparator.comparingDouble(v -> v.y));
+
+        // Step 3: Build platform chain from sorted list
+        for (int i = 0; i < scatteredPositions.size(); i++) {
+            Vector3f pos = scatteredPositions.get(i);
+
+            // Adjust next platform if the jump is too far
+            if (i > 0) {
+                Vector3f last = scatteredPositions.get(i - 1);
+                Vector3f diff = pos.subtract(last);
+
+                // Clamp horizontal range
+                float dx = FastMath.clamp(diff.x, -maxJumpXZ, maxJumpXZ);
+                float dz = FastMath.clamp(diff.z, -maxJumpXZ, maxJumpXZ);
+                float dy = FastMath.clamp(diff.y, 1f, maxJumpY);
+
+                pos = last.add(new Vector3f(dx, dy, dz));
+                scatteredPositions.set(i, pos);
+            }
+
+            // Platform size shrinks as we go up
+            float size = FastMath.clamp(2f - i * 0.03f + FastMath.nextRandomFloat(), 0.6f, 2.5f);
+            Vector3f platformSize = new Vector3f(size, 0.3f, size);
+
+            Geometry platform = new Geometry("Platform" + i, new Box(platformSize.x, platformSize.y, platformSize.z));
+            platform.setLocalTranslation(pos);
+
+            ColorRGBA color = (i % 2 == 0) ? ColorRGBA.Green : ColorRGBA.fromRGBA255(211, 84, 0, 0);
+            Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+            mat.setColor("Color", color);
+            platform.setMaterial(mat);
+
+            RigidBodyControl control = new RigidBodyControl(new BoxCollisionShape(platformSize), 0);
+            platform.addControl(control);
+            bulletAppState.getPhysicsSpace().add(control);
+            rootNode.attachChild(platform);
+        }
+
+
+
+
 
         // === Camera ===
         cameraOffset = new Vector3f(0, 4f, 8f); // This can still influence ChaseCamera defaults
