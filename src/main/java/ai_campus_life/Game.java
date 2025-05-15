@@ -4,11 +4,13 @@ package ai_campus_life;
 import com.jme3.app.SimpleApplication;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.FastMath;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Box;
 //import com.jme3.scene.shape.RectangleMesh;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.Vector3f;
+import com.jme3.input.ChaseCamera;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
@@ -49,6 +51,7 @@ public class Game extends SimpleApplication implements ActionListener {
     private final float groundThreshold = 0.01f; // Tune based on your physics
     private boolean wasInAir = false;
 
+
     public static void main(String[] args) {
         Game app = new Game();
         AppSettings settings = new AppSettings(true);
@@ -61,6 +64,7 @@ public class Game extends SimpleApplication implements ActionListener {
     @Override
     public void simpleInitApp() {
         flyCam.setEnabled(false);
+        inputManager.setCursorVisible(false);
 
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
@@ -134,10 +138,13 @@ public class Game extends SimpleApplication implements ActionListener {
         addObstacle(new Vector3f(0, 0.3f, -6), new Vector3f(3, 0.3f, 1.5f));
 
         // === Camera ===
-        cameraOffset = new Vector3f(0, 4f, 8f);
-        Vector3f initialCubePosition = cubePhysicsControl.getPhysicsLocation();
-        cam.setLocation(initialCubePosition.add(cameraOffset));
-        cam.lookAt(initialCubePosition, Vector3f.UNIT_Y);
+        cameraOffset = new Vector3f(0, 4f, 8f); // This can still influence ChaseCamera defaults
+        ChaseCamera chaseCam = new ChaseCamera(cam, cubeNode, inputManager);
+        chaseCam.setDefaultDistance(cameraOffset.length());
+        chaseCam.setDefaultVerticalRotation((float) Math.toRadians(20));
+        chaseCam.setMinVerticalRotation(-FastMath.HALF_PI);
+        chaseCam.setMaxVerticalRotation(FastMath.HALF_PI);
+        chaseCam.setRotationSpeed(3f);
 
         setupKeys();
     }
