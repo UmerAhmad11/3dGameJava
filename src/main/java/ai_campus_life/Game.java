@@ -285,6 +285,7 @@ public class Game extends SimpleApplication implements ActionListener {
 
         // === Scattered + Reachable + Climbable Platforms ===
         // === Scattered + Reachable + Climbable Platforms (Improved) ===
+        /* 
         int numPlatforms = 50;
         float groundSize = 25f;
         float minY = 2f;
@@ -356,6 +357,14 @@ public class Game extends SimpleApplication implements ActionListener {
             platform.addControl(control);
             bulletAppState.getPhysicsSpace().add(control);
             rootNode.attachChild(platform);
+        }*/
+
+        ArrayList<Vector3f> manualPositions = getManualPlatformPositions();
+
+        for (int i = 0; i < manualPositions.size(); i++) {
+            Vector3f pos = manualPositions.get(i);
+            float size = FastMath.clamp(2f - i * 0.03f + FastMath.nextRandomFloat(), 0.7f, 2.5f);
+            addObstacle(pos, new Vector3f(size, 0.3f, size));
         }
 
 
@@ -492,5 +501,14 @@ public class Game extends SimpleApplication implements ActionListener {
     
         rootNode.attachChild(obstacle);
     }
+
+    private ArrayList<Vector3f> getManualPlatformPositions() {
+        ArrayList<Vector3f> list = new ArrayList<>();
+        list.add(new Vector3f(8, 2, 0));
+        list.add(new Vector3f(3, 5, 2));
+        // ... Add up to 50
+        return list;
+    }
+    
     
 }
