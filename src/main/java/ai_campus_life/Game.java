@@ -359,6 +359,8 @@ public class Game extends SimpleApplication implements ActionListener {
             rootNode.attachChild(platform);
         }*/
 
+        // === PLatform Creation Manual ===
+
         ArrayList<Vector3f> manualPositions = getManualPlatformPositions();
 
         for (int i = 0; i < manualPositions.size(); i++) {
@@ -366,11 +368,6 @@ public class Game extends SimpleApplication implements ActionListener {
             float size = FastMath.clamp(2f - i * 0.03f + FastMath.nextRandomFloat(), 0.7f, 2.5f);
             addObstacle(pos, new Vector3f(size, 0.3f, size));
         }
-
-
-
-
-
 
         // === Camera ===
         cameraOffset = new Vector3f(0, 4f, 8f); // This can still influence ChaseCamera defaults
@@ -383,7 +380,6 @@ public class Game extends SimpleApplication implements ActionListener {
 
         setupKeys();
     }
-
 
     private void setupKeys() {
         inputManager.addMapping(MOVE_CUBE_FORWARD, new KeyTrigger(KeyInput.KEY_UP));
@@ -506,9 +502,11 @@ public class Game extends SimpleApplication implements ActionListener {
         ArrayList<Vector3f> list = new ArrayList<>();
         list.add(new Vector3f(8, 2, 0));
         list.add(new Vector3f(3, 5, 2));
+        list.add(new Vector3f(-5, 7, 4));
+        list.add(new Vector3f(-10, 9, 4));
+        list.add(new Vector3f(-15, 12, 4));
         // ... Add up to 50
         return list;
     }
-    
     
 }
